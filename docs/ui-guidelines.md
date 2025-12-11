@@ -46,3 +46,28 @@
 ## Icons
 
 - Use Material Icons for actions (edit, delete, complete, etc.)
+
+## Priority System
+
+### Priority Badges
+
+Priority badges indicate task urgency using color-coded chips:
+
+- **P1 (High Priority)**: #d32f2f (red) - urgent tasks requiring immediate attention
+- **P2 (Medium Priority)**: #ff9800 (orange) - important tasks with moderate urgency
+- **P3 (Low Priority)**: #9e9e9e (gray) - routine tasks with no immediate deadline pressure
+
+Badge styling:
+- Use MUI `Chip` component with small size
+- Display priority label text (P1, P2, or P3)
+- Ensure WCAG AA contrast compliance
+- Position badges in task list alongside due date badges
+
+### Priority Selector (Form Control)
+
+Priority selection uses button group or segmented control:
+
+- **Unselected state**: #7a7a7a (gray) - indicates available but not chosen option
+- **Selected state**: #07f2e6 (blue) - indicates currently active priority level
+- Provide clear visual feedback on selection
+- Default to P3 for new tasks

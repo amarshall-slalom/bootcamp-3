@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { TextField, Button, Paper, Typography, Box } from '@mui/material';
+import { TextField, Button, Paper, Typography, Box, ToggleButtonGroup, ToggleButton } from '@mui/material';
 import AddIcon from '@mui/icons-material/Add';
 import SaveIcon from '@mui/icons-material/Save';
 
@@ -7,6 +7,7 @@ function TaskForm({ onSave, initialTask }) {
   const [title, setTitle] = useState(initialTask?.title || '');
   const [description, setDescription] = useState(initialTask?.description || '');
   const [dueDate, setDueDate] = useState(initialTask?.due_date || '');
+  const [priority, setPriority] = useState(initialTask?.priority || 'P3');
   const [error, setError] = useState(null);
 
   // Helper to normalize date string to YYYY-MM-DD format
@@ -30,10 +31,12 @@ function TaskForm({ onSave, initialTask }) {
       setTitle(initialTask.title || '');
       setDescription(initialTask.description || '');
       setDueDate(normalizeDateString(initialTask.due_date));
+      setPriority(initialTask.priority || 'P3');
     } else {
       setTitle('');
       setDescription('');
       setDueDate('');
+      setPriority('P3');
     }
   }, [initialTask]);
 
@@ -44,10 +47,11 @@ function TaskForm({ onSave, initialTask }) {
       return;
     }
     setError(null);
-    await onSave({ title, description, due_date: dueDate });
+    await onSave({ title, description, due_date: dueDate, priority });
     setTitle('');
     setDescription('');
     setDueDate('');
+    setPriority('P3');
   };
 
   return (
@@ -120,6 +124,50 @@ function TaskForm({ onSave, initialTask }) {
             }
           }}
         />
+        <Box>
+          <Typography 
+            variant="caption" 
+            sx={{ 
+              fontWeight: 600, 
+              color: '#616161',
+              mb: 0.5,
+              display: 'block'
+            }}
+          >
+            Priority
+          </Typography>
+          <ToggleButtonGroup
+            value={priority}
+            exclusive
+            onChange={(e, newPriority) => newPriority && setPriority(newPriority)}
+            size="small"
+            fullWidth
+            sx={{
+              '& .MuiToggleButton-root': {
+                borderRadius: 2,
+                border: '1px solid #e0e0e0',
+                fontWeight: 600,
+                textTransform: 'none',
+                color: '#7a7a7a',
+                '&.Mui-selected': {
+                  backgroundColor: '#07f2e6',
+                  color: '#212121',
+                  border: '1px solid #07f2e6',
+                  '&:hover': {
+                    backgroundColor: '#06d9d0',
+                  }
+                },
+                '&:hover': {
+                  backgroundColor: 'rgba(122, 122, 122, 0.1)',
+                }
+              }
+            }}
+          >
+            <ToggleButton value="P1" data-testid="priority-p1">P1 - High</ToggleButton>
+            <ToggleButton value="P2" data-testid="priority-p2">P2 - Medium</ToggleButton>
+            <ToggleButton value="P3" data-testid="priority-p3">P3 - Low</ToggleButton>
+          </ToggleButtonGroup>
+        </Box>
         <TextField
           id="task-due-date"
           label="Due Date"
