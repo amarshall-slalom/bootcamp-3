@@ -1,0 +1,146 @@
+MVP
+
+- Epic: Due Date Support
+	- Story: Add optional due date field (YYYY-MM-DD)
+		- Acceptance Criteria:
+			- User can set an optional `dueDate` in ISO `YYYY-MM-DD` format.
+			- `dueDate` is not required; tasks save successfully without it.
+			- Invalid `dueDate` values are ignored (treated as absent) without breaking save/edit.
+			- UI clearly indicates when no `dueDate` is set.
+			- Unit tests validate accepted/ignored formats via public API (no mocks), using AAA.
+	- Story: Ignore invalid due date values on save
+		- Acceptance Criteria:
+			- On create/edit, invalid date strings do not persist to storage.
+			- Task remains otherwise unchanged and operation succeeds.
+			- Edge cases covered: empty string, non-ISO text, impossible dates (e.g., 2025-02-30).
+			- Tests assert outcomes only; no implementation details.
+	- Story: Persist due date in local storage
+			- Technical Requirements:
+				- Frontend (React in `packages/frontend/src`):
+					- Add `dueDate` input to `TaskForm.js` using MUI `TextField` with `type="date"` and ISO `YYYY-MM-DD` value handling.
+					- Update `TaskList.js` to render `dueDate` when present and indicate absence per UI guidelines.
+					- Ensure date parsing uses native Date and simple ISO validation; avoid third-party libs.
+				- Storage: Use `localStorage` read/write in existing data flow (`App.js` state) to persist `dueDate`.
+				- Backend: No changes to `packages/backend/src` per PRD (local-only).
+		- Acceptance Criteria:
+			- `dueDate` is stored and retrieved consistently from localStorage.
+			- Refreshing the page preserves the `dueDate` value.
+			- Backward compatibility: tasks without `dueDate` load without errors.
+			- Tests are deterministic and fast; no external storage/mocks.
+
+- Epic: Priority System
+	- Story: Add priority field with P1/P2/P3 options
+		- Acceptance Criteria:
+			- Priority field supports only `P1`, `P2`, `P3` selections.
+			- Invalid values revert to default behavior (see default story).
+			- Priority is visible wherever tasks are listed or edited.
+			- Black-box tests cover selection and persistence.
+	- Story: Default new tasks to priority P3
+		- Acceptance Criteria:
+			- New tasks created without explicit priority are saved as `P3`.
+			- Editing retains existing priority unless changed by user.
+			- Unit tests verify defaulting behavior via public interface.
+	- Story: Display color-coded priority badges (P1 red, P2 orange, P3 gray)
+			- Technical Requirements:
+				- Frontend: Extend `TaskForm.js` with MUI `Select` for `priority` values `P1|P2|P3` (default `P3`).
+				- Frontend: In `TaskList.js`, render badges using MUI `Chip` with color mapping (P1 red, P2 orange, P3 gray) adhering to `docs/ui-guidelines.md`.
+				- State: Ensure `App.js` task model includes `priority` and defaulting logic when creating tasks.
+				- Storage: Persist `priority` in `localStorage` alongside other task fields.
+		- Acceptance Criteria:
+			- `P1` shows as red badge, `P2` orange, `P3` gray per UI guidelines.
+			- Badges are visible in list and detail views.
+			- Contrast meets WCAG AA per UI guidelines.
+			- Tests assert rendered output contains correct visual markers (class/aria), not internal state.
+
+- Epic: Task Filtering
+	- Story: Implement All filter tab (show completed)
+		- Acceptance Criteria:
+			- All tab displays both completed and incomplete tasks.
+			- Filter switching does not modify task data.
+			- Tests verify correct items rendered given sample dataset.
+	- Story: Implement Today filter tab (incomplete due today)
+		- Acceptance Criteria:
+			- Only incomplete tasks with `dueDate` equal to today are shown.
+			- Completed tasks with today’s date are excluded.
+			- Tests control the current date and assert behavior deterministically.
+	- Story: Implement Overdue filter tab (incomplete past due)
+		- Acceptance Criteria:
+			- Only incomplete tasks with `dueDate` before today are shown.
+			- Completed overdue tasks are excluded.
+			- Tests include edge case: tasks with no `dueDate` are excluded.
+	- Story: Add tab switching between filter views
+			- Technical Requirements:
+				- Frontend: Add filter tab UI in `App.js` using MUI `Tabs` for All/Today/Overdue.
+				- Filtering logic resides in `App.js` selector functions, computed from current state without mutating data.
+				- Today/Overdue calculations use client date (no timezone libs) comparing ISO `dueDate` to `new Date()`.
+				- Do not display completed tasks in Today/Overdue views.
+		- Acceptance Criteria:
+			- Users can switch between All, Today, Overdue without page reload.
+			- Active tab state is visually indicated and keyboard accessible.
+			- Tests simulate user interactions and assert rendered results.
+
+- Epic: Data Model Updates
+	- Story: Extend task model with priority and dueDate fields
+		- Acceptance Criteria:
+			- Task schema includes `title` (required), `completed` (boolean), `priority` (enum), `dueDate` (optional ISO).
+			- Invalid `priority` or `dueDate` values do not crash and follow default/ignore rules.
+			- Tests verify schema behavior through public operations.
+	- Story: Validate required title field on create/edit
+			- Technical Requirements:
+				- Define a task shape `{ id, title, description?, completed, priority, dueDate, createdAt }` in `App.js`.
+				- Validation occurs in form submit handler within `TaskForm.js` (block save on empty `title`).
+				- Graceful handling of missing `priority`/`dueDate` when loading from storage.
+		- Acceptance Criteria:
+			- Creating/editing a task without `title` fails with a visible validation message.
+			- No task is persisted when `title` is missing.
+			- Tests assert validation outcome; no internal method spying.
+
+- Epic: Local Storage Persistence
+	- Story: Store updated task schema in local storage
+		- Acceptance Criteria:
+			- All fields (`title`, `completed`, `priority`, `dueDate`) are persisted and restored.
+			- Storage read/write errors are handled gracefully (no crashes).
+			- Tests use in-memory/local environment; no external services.
+	- Story: Migrate existing tasks without dueDate/priority gracefully
+			- Technical Requirements:
+				- Implement serialization/deserialization helpers in `App.js` to read/write tasks from `localStorage`.
+				- On load, set `priority` to `P3` if absent; leave `dueDate` undefined if not present.
+				- Avoid schema-breaking changes; maintain backward compatibility with existing `App.js` storage key.
+		- Acceptance Criteria:
+			- Existing records missing `priority`/`dueDate` load without errors.
+			- Missing `priority` defaults to `P3`; missing `dueDate` remains absent.
+			- Tests cover mixed datasets and confirm non-destructive migration.
+
+Post-MVP
+
+- Epic: Overdue Visual Highlighting
+	- Story: Highlight overdue tasks in red in task list
+			- Technical Requirements:
+				- Frontend: In `TaskList.js`, apply a red highlight style (per UI guidelines) to overdue, incomplete tasks.
+				- Use MUI styling (`sx` or classes) ensuring WCAG AA contrast.
+		- Acceptance Criteria:
+			- Tasks with `dueDate` before today and not completed are visually highlighted in red.
+			- Highlight does not apply to completed tasks.
+			- Tests assert visual indicator presence via rendered output.
+
+- Epic: Advanced Sorting
+	- Story: Sort overdue tasks to top
+		- Acceptance Criteria:
+			- Overdue, incomplete tasks are ordered before all other tasks.
+			- Tests confirm ordering with mixed datasets.
+	- Story: Sort by priority P1→P2→P3 within groups
+		- Acceptance Criteria:
+			- Within non-overdue and overdue groups, tasks sort by `P1` > `P2` > `P3`.
+			- Tests validate stable ordering under equal due dates.
+	- Story: Sort by due date ascending within same priority
+		- Acceptance Criteria:
+			- Within same priority group, tasks sort by earliest `dueDate` first.
+			- Tests include ties and verify deterministic results.
+	- Story: Place tasks without due dates at the end
+		- Technical Requirements:
+			- Implement a pure sorting function in `App.js` that orders tasks by: overdue first, then priority (P1→P2→P3), then due date asc, then undated last.
+			- Ensure stability when fields tie; do not mutate source arrays.
+			- Apply sorting in list render pipeline without affecting storage order.
+		- Acceptance Criteria:
+			- Tasks lacking `dueDate` appear after all dated tasks regardless of priority.
+			- Tests confirm undated placement under various scenarios.
